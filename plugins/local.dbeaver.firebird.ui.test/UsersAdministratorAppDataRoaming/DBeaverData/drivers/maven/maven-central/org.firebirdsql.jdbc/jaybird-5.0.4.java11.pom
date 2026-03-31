@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <!-- This module was also published with a richer model, Gradle metadata,  -->
+  <!-- which should be used instead. Do not delete the following line which  -->
+  <!-- is to indicate to Gradle or any Gradle module metadata file consumer  -->
+  <!-- that they should prefer consuming it instead. -->
+  <!-- do_not_remove: published-with-gradle-metadata -->
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.firebirdsql.jdbc</groupId>
+  <artifactId>jaybird</artifactId>
+  <version>5.0.4.java11</version>
+  <name>Jaybird JDBC Driver</name>
+  <description>JDBC Driver for the Firebird RDBMS</description>
+  <url>https://www.firebirdsql.org/en/devel-jdbc-driver/</url>
+  <inceptionYear>2001</inceptionYear>
+  <licenses>
+    <license>
+      <name>GNU Lesser General Public License</name>
+      <url>https://www.gnu.org/copyleft/lesser.html</url>
+      <distribution>repo</distribution>
+      <comments>The Jaybird JDBC driver is distributed free of charge under the GNU Lesser General Public License (LGPL). Text of the license can be obtained from https://www.gnu.org/copyleft/lesser.html</comments>
+    </license>
+    <license>
+      <name>Modified BSD (3-clause) License</name>
+      <url>https://opensource.org/licenses/BSD-3-Clause</url>
+      <distribution>repo</distribution>
+      <comments>The extension interfaces of Jaybird are defined under a modified BSD license</comments>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>mrotteveel</id>
+      <name>Mark Rotteveel</name>
+      <email>mark@lawinegevaar.nl</email>
+      <roles>
+        <role>Administrator</role>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>rrokytskyy</id>
+      <name>Roman Rokytskyy</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>d_jencks</id>
+      <name>David Jencks</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>brodsom</id>
+      <name>Blas Rodriguez Somoza</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>gab_reid</id>
+      <name>Gabriel Reid</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>ryanbaldwin</id>
+      <name>Ryan Baldwin</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>sjardine</id>
+      <name>Steven Jardine</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>alberola</id>
+      <name>Alejandro Alberola Arias</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>rfincher</id>
+      <name>Rick Fincher</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>skywalker</id>
+      <name>Mark ODonohue</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>skidder</id>
+      <name>Nikolay Samofatov</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>lorban</id>
+      <name>Ludovic Orban</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>tsteinmaurer</id>
+      <name>Thomas Steinmaurer</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+  </developers>
+  <contributors>
+    <contributor>
+      <name>Smyatkin-Maxim</name>
+      <url>https://github.com/Smyatkin-Maxim</url>
+    </contributor>
+    <contributor>
+      <name>Hajime Nakagami</name>
+      <url>https://github.com/nakagami</url>
+    </contributor>
+    <contributor>
+      <name>Vjacheslav Borisov</name>
+      <url>https://github.com/slavb18</url>
+    </contributor>
+    <contributor>
+      <name>Ivan Arabadzhiev</name>
+      <url>https://github.com/ls4f</url>
+    </contributor>
+    <contributor>
+      <name>Artyom Smirnov</name>
+      <url>https://github.com/artyom-smirnov</url>
+    </contributor>
+    <contributor>
+      <name>Vasiliy Yashkov</name>
+      <url>https://github.com/vasiliy-yashkov</url>
+    </contributor>
+    <contributor>
+      <name>Julien Nabet</name>
+      <url>https://github.com/serval2412</url>
+    </contributor>
+  </contributors>
+  <mailingLists>
+    <mailingList>
+      <name>firebird-java</name>
+      <subscribe>firebird-java+subscribe@googlegroups.com</subscribe>
+      <unsubscribe>firebird-java+unsubscribe@googlegroups.com</unsubscribe>
+      <post>firebird-java@googlegroups.com</post>
+      <archive>https://groups.google.com/g/firebird-java</archive>
+      <otherArchives>
+        <otherArchive>http://fb-list-archive.s3-website-eu-west-1.amazonaws.com/firebird-java/index.html</otherArchive>
+      </otherArchives>
+    </mailingList>
+  </mailingLists>
+  <scm>
+    <connection>scm:git:https://github.com/FirebirdSQL/jaybird.git</connection>
+    <developerConnection>scm:git:https://github.com/FirebirdSQL/jaybird.git</developerConnection>
+    <url>https://github.com/FirebirdSQL/jaybird</url>
+  </scm>
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/FirebirdSQL/jaybird/issues/</url>
+  </issueManagement>
+  <dependencies>
+    <dependency>
+      <groupId>net.java.dev.jna</groupId>
+      <artifactId>jna</artifactId>
+      <version>5.12.1</version>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+</project>

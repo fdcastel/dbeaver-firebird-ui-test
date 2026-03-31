@@ -27,8 +27,8 @@ $isql = $props['FIREBIRD_ISQL']
 $database = $props['FIREBIRD_DATABASE']
 $user = $props['FIREBIRD_USER']
 $password = $props['FIREBIRD_PASSWORD']
-$host = $props['FIREBIRD_HOST']
-$port = $props['FIREBIRD_PORT']
+$fbHost = $props['FIREBIRD_HOST']
+$fbPort = $props['FIREBIRD_PORT']
 
 if (-not $isql -or -not (Test-Path $isql)) {
     Write-Error "Firebird isql not found at: $isql"
@@ -54,7 +54,7 @@ $createSql | & $isql -user $user -password $password -z 2>&1
 if ($LASTEXITCODE -ne 0 -and -not (Test-Path $database)) {
     # Try alternative create method via services
     Write-Host "Trying alternative creation via localhost..."
-    $createSql = "CREATE DATABASE '${host}/${port}:${database}' USER '$user' PASSWORD '$password' DEFAULT CHARACTER SET UTF8;"
+    $createSql = "CREATE DATABASE '${fbHost}/${fbPort}:${database}' USER '$user' PASSWORD '$password' DEFAULT CHARACTER SET UTF8;"
     $createSql | & $isql -user $user -password $password 2>&1
 }
 
@@ -71,7 +71,7 @@ $fixtures = Get-ChildItem $fixtureDir -Filter "*.sql" | Sort-Object Name
 
 foreach ($fixture in $fixtures) {
     Write-Host "Applying fixture: $($fixture.Name)"
-    & $isql -user $user -password $password "${host}/${port}:${database}" -input $fixture.FullName 2>&1
+    & $isql -user $user -password $password "${fbHost}/${fbPort}:${database}" -input $fixture.FullName 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Fixture $($fixture.Name) returned exit code $LASTEXITCODE (may be non-fatal)"
     }

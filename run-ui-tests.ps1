@@ -109,9 +109,10 @@ $mvnExitCode = $LASTEXITCODE
 Write-Host ""
 Write-Host "--- Collecting artifacts ---" -ForegroundColor Yellow
 
-$surefireReports = Get-ChildItem $scriptDir -Recurse -Filter "TEST-*.xml" -Path "*/surefire-reports/*" -ErrorAction SilentlyContinue
+$surefireReports = Get-ChildItem -Path "$scriptDir\plugins\*\target\surefire-reports\TEST-*.xml" -ErrorAction SilentlyContinue
 foreach ($report in $surefireReports) {
     Copy-Item $report.FullName $artifactsDir -Force
+    Write-Host "  Report: $($report.Name)"
 }
 
 # Copy screenshots if any
