@@ -21,18 +21,21 @@ param(
     [switch]$MavenVerbose
 )
 
-$ErrorActionPreference = "Stop"
+# Do NOT use $ErrorActionPreference = "Stop" globally — it causes silent deaths.
+# Each section handles its own errors with try/catch and clear messages.
 $scriptDir = $PSScriptRoot
 $startTime = Get-Date
 
 Write-Host "===== DBeaver UI Test Suite =====" -ForegroundColor Cyan
 Write-Host "Started: $startTime"
+Write-Host "Script dir: $scriptDir"
 Write-Host ""
 
 # --- Load properties ---
 $propsFile = Join-Path $scriptDir "ui-test.local.properties"
 if (-not (Test-Path $propsFile)) {
-    Write-Error "Local properties file not found: $propsFile`nCopy ui-test.local.properties.example to ui-test.local.properties and edit it."
+    Write-Host "ERROR: Local properties file not found: $propsFile" -ForegroundColor Red
+    Write-Host "  Copy ui-test.local.properties.example to ui-test.local.properties and edit it." -ForegroundColor Yellow
     exit 1
 }
 
@@ -50,17 +53,36 @@ if (-not $artifactsDir) { $artifactsDir = Join-Path $scriptDir "artifacts" }
 # --- Verify prerequisites ---
 if (-not $SkipPrereqCheck) {
     Write-Host "--- Verifying prerequisites ---" -ForegroundColor Yellow
-    & "$scriptDir\scripts\verify-prerequisites.ps1" -PropertiesFile "$propsFile"
-    if ($LASTEXITCODE -ne 0) { exit 1 }
+    try {
+        & "$scriptDir\scripts\verify-prerequisites.ps1" -PropertiesFile "$propsFile"
+        # verify-prerequisites.ps1 calls 'exit 1' on failure but falls through on success.
+        # $LASTEXITCODE is unreliable after a PS script — check $? instead.
+        if (-not $?) {
+            Write-Host "ERROR: Prerequisite check script failed." -ForegroundColor Red
+            exit 1
+        }
+    } catch {
+        Write-Host "ERROR: Prerequisite check failed: $_" -ForegroundColor Red
+        exit 1
+    }
     Write-Host ""
 }
 
 # --- Reset Firebird database ---
 if (-not $SkipDbReset) {
     Write-Host "--- Resetting Firebird test database ---" -ForegroundColor Yellow
-    & "$scriptDir\scripts\reset-firebird-db.ps1" -PropertiesFile "$propsFile"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Database reset failed."
+    try {
+        & "$scriptDir\scripts\reset-firebird-db.ps1" -PropertiesFile "$propsFile"
+        if (-not $?) {
+            Write-Host "ERROR: Database reset script reported a failure." -ForegroundColor Red
+            Write-Host "  Check that Firebird is running and no other process has the database locked." -ForegroundColor Yellow
+            Write-Host "  You can skip this step with -SkipDbReset if the database already exists." -ForegroundColor Yellow
+            exit 1
+        }
+    } catch {
+        Write-Host "ERROR: Database reset failed: $_" -ForegroundColor Red
+        Write-Host "  Check that Firebird is running and no other process has the database locked." -ForegroundColor Yellow
+        Write-Host "  You can skip this step with -SkipDbReset if the database already exists." -ForegroundColor Yellow
         exit 1
     }
     Write-Host ""
@@ -73,8 +95,22 @@ if (Test-Path $artifactsDir) {
 New-Item -ItemType Directory -Path $artifactsDir -Force | Out-Null
 
 # --- Build P2 URL ---
+if (-not $dbeaverP2 -or -not (Test-Path $dbeaverP2)) {
+    Write-Host "ERROR: DBeaver P2 repository not found at: $dbeaverP2" -ForegroundColor Red
+    Write-Host "  Set DBEAVER_P2_REPO in $propsFile to the local P2 repository." -ForegroundColor Yellow
+    Write-Host "  Build DBeaver first: cd $dbeaverRepo && mvn verify -pl product/repositories/org.jkiss.dbeaver.ce.repository" -ForegroundColor Yellow
+    exit 1
+}
 $p2Url = "file:///" + ($dbeaverP2 -replace '\\', '/')
 Write-Host "DBeaver P2 repo: $p2Url"
+
+# --- Verify Maven is available ---
+$mvnCmd = Get-Command mvn -ErrorAction SilentlyContinue
+if (-not $mvnCmd) {
+    Write-Host "ERROR: Maven (mvn) not found in PATH." -ForegroundColor Red
+    Write-Host "  Install Maven and ensure 'mvn' is on the PATH." -ForegroundColor Yellow
+    exit 1
+}
 
 # --- Run Maven ---
 Write-Host ""
@@ -105,14 +141,21 @@ Write-Host ""
 & mvn @mvnArgs
 $mvnExitCode = $LASTEXITCODE
 
+if ($null -eq $mvnExitCode) { $mvnExitCode = 1 }
+
 # --- Collect artifacts ---
 Write-Host ""
 Write-Host "--- Collecting artifacts ---" -ForegroundColor Yellow
 
 $surefireReports = Get-ChildItem -Path "$scriptDir\plugins\*\target\surefire-reports\TEST-*.xml" -ErrorAction SilentlyContinue
-foreach ($report in $surefireReports) {
-    Copy-Item $report.FullName $artifactsDir -Force
-    Write-Host "  Report: $($report.Name)"
+if ($surefireReports) {
+    foreach ($report in $surefireReports) {
+        Copy-Item $report.FullName $artifactsDir -Force
+        Write-Host "  Report: $($report.Name)"
+    }
+} else {
+    Write-Host "  No surefire reports found — tests may not have run." -ForegroundColor Yellow
+    Write-Host "  Check Maven output above for errors." -ForegroundColor Yellow
 }
 
 # Copy screenshots if any

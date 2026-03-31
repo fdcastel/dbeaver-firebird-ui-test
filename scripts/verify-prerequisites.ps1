@@ -55,6 +55,7 @@ if (Test-Path $PropertiesFile) {
 Write-Host ""
 if ($allOk) {
     Write-Host "All prerequisites OK." -ForegroundColor Green
+    exit 0
 } else {
     Write-Host "Some prerequisites are missing. Fix them before running tests." -ForegroundColor Red
     exit 1
