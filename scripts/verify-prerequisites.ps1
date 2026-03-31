@@ -50,6 +50,38 @@ if (Test-Path $PropertiesFile) {
     # Firebird isql
     $isql = $props['FIREBIRD_ISQL']
     Check "Firebird isql found at $isql" (Test-Path $isql)
+
+    # Firebird service
+    $fbService = Get-Service -Name 'FirebirdServerDefaultInstance' -ErrorAction SilentlyContinue
+    if ($null -eq $fbService) {
+        Check "Firebird service installed" $false
+    } else {
+        Check "Firebird service installed" $true
+        Check "Firebird service running" ($fbService.Status -eq 'Running')
+    }
+
+    # Firebird TCP connectivity
+    $fbHost = $props['FIREBIRD_HOST']
+    $fbPort = [int]$props['FIREBIRD_PORT']
+    $tcpOk = $false
+    try {
+        $tcp = New-Object System.Net.Sockets.TcpClient
+        $tcp.Connect($fbHost, $fbPort)
+        $tcpOk = $tcp.Connected
+        $tcp.Close()
+    } catch { } finally { if ($tcp) { $tcp.Dispose() } }
+    Check "Firebird listening on ${fbHost}:${fbPort}" $tcpOk
+
+    # Firebird version (expect 5.x)
+    if ($isql -and (Test-Path $isql)) {
+        $versionLine = (& $isql -z 2>&1 | Select-Object -First 1) -as [string]
+        if ($versionLine -match 'Firebird\s+(\d+)') {
+            $fbMajor = $Matches[1]
+            Check "Firebird version is 5.x (found $($versionLine.Trim()))" ($fbMajor -eq '5')
+        } else {
+            Check "Firebird version detected" $false
+        }
+    }
 }
 
 Write-Host ""

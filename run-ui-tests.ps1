@@ -231,6 +231,28 @@ $dbeaverP2 = $props['DBEAVER_P2_REPO']
 $artifactsDir = $props['ARTIFACTS_DIR']
 if (-not $artifactsDir) { $artifactsDir = Join-Path $scriptDir "artifacts" }
 
+# --- Kill lingering Java/SWT processes from previous test runs ---
+Write-Host "--- Checking for lingering test processes ---" -ForegroundColor Yellow
+$targetWorkDir = Join-Path $scriptDir "plugins\local.dbeaver.firebird.ui.test\target"
+$staleJavaProcs = Get-Process java -ErrorAction SilentlyContinue | Where-Object {
+    try {
+        $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)" -ErrorAction SilentlyContinue).CommandLine
+        $cmdLine -and ($cmdLine -like "*$([regex]::Escape($scriptDir))*" -or $cmdLine -like "*tycho*surefire*")
+    } catch { $false }
+}
+if ($staleJavaProcs) {
+    Write-Host "  Found $(@($staleJavaProcs).Count) lingering Java process(es) from a previous test run:" -ForegroundColor Yellow
+    foreach ($proc in $staleJavaProcs) {
+        Write-Host "    PID $($proc.Id) (started $($proc.StartTime))" -ForegroundColor Yellow
+        Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+    }
+    Write-Host "  Killed. Waiting for file locks to release..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 3
+} else {
+    Write-Host "  No lingering test processes found." -ForegroundColor Green
+}
+Write-Host ""
+
 # --- Verify prerequisites ---
 if (-not $SkipPrereqCheck) {
     Write-Host "--- Verifying prerequisites ---" -ForegroundColor Yellow
