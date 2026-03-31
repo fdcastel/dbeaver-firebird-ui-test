@@ -130,19 +130,19 @@ jobs:
           Write-Host "Database setup complete."
 
       - name: Run UI tests
-        shell: pwsh
+        shell: bash
         run: |
-          $p2Url = "file:///C:/dbeaver-p2-repo"
-          $dbPath = "C:/temp/firebird-ui-test/UI_TEST_FB5.FDB"
+          P2_URL="file:///C:/dbeaver-p2-repo"
+          DB_PATH="C:/temp/firebird-ui-test/UI_TEST_FB5.FDB"
 
-          mvn clean verify `
-            -f pom.xml `
-            -Ddbeaver.p2.url="$p2Url" `
-            -Dfirebird.host=localhost `
-            -Dfirebird.port=3050 `
-            -Dfirebird.database="$dbPath" `
-            -Dfirebird.user=SYSDBA `
-            -Dfirebird.password=masterkey `
+          mvn clean verify \
+            -f pom.xml \
+            "-Ddbeaver.p2.url=${P2_URL}" \
+            -Dfirebird.host=localhost \
+            -Dfirebird.port=3050 \
+            "-Dfirebird.database=${DB_PATH}" \
+            -Dfirebird.user=SYSDBA \
+            -Dfirebird.password=masterkey \
             -B --no-transfer-progress
 
       - name: Upload test artifacts
