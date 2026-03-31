@@ -28,6 +28,12 @@
                         <goals><goal>run</goal></goals>
                         <configuration>
                             <target>
+                                <!-- Convert build directory to forward slashes for Eclipse/Java properties files.
+                                     On Windows, backslashes in paths like '...\test\target' are interpreted as
+                                     escape sequences (\t = tab) by Eclipse's properties parser, breaking DBeaver startup. -->
+                                <pathconvert property="build.dir.fwd" dirsep="/">
+                                    <path location="${project.build.directory}"/>
+                                </pathconvert>
                                 <!-- Seed DBeaver preferences to suppress startup dialogs -->
                                 <mkdir dir="${project.build.directory}/test-workspace/.metadata/.plugins/org.eclipse.core.runtime/.settings"/>
                                 <echo file="${project.build.directory}/test-workspace/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.jkiss.dbeaver.core.prefs">eclipse.preferences.version=1
@@ -37,7 +43,7 @@ ui.auto.update.check=false
 ui.show.tip.of.the.day.on.startup=false
 org.jkiss.dbeaver.core.confirm.driver_download=always
 navigator.expand.on.connect=true
-ui.drivers.home=${project.build.directory}/drivers
+ui.drivers.home=${build.dir.fwd}/drivers
 </echo>
                                 <echo file="${project.build.directory}/test-workspace/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.jkiss.dbeaver.ui.statistics.prefs">eclipse.preferences.version=1
 feature.tracking.skipConfirmation=true
@@ -49,7 +55,7 @@ feature.tracking.skipConfirmation=true
                                     <fileset dir="${env.APPDATA}/DBeaverData/drivers/maven/maven-central" includes="org.firebirdsql.jdbc/**,net.java.dev.jna/**"/>
                                 </copy>
                                 <!-- Create plugin_customization.ini for DBeaver preferences -->
-                                <echo file="${project.build.directory}/plugin_customization.ini">org.jkiss.dbeaver.core/ui.drivers.home=${project.build.directory}/drivers
+                                <echo file="${project.build.directory}/plugin_customization.ini">org.jkiss.dbeaver.core/ui.drivers.home=${build.dir.fwd}/drivers
 org.jkiss.dbeaver.core/sample.database.canceled=true
 org.jkiss.dbeaver.core/tipOfTheDayInitializer.notFirstRun=true
 org.jkiss.dbeaver.core/ui.auto.update.check=false

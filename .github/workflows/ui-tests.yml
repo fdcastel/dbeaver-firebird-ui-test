@@ -130,6 +130,7 @@ jobs:
           Write-Host "Database setup complete."
 
       - name: Run UI tests
+        timeout-minutes: 15
         shell: bash
         run: |
           P2_URL="file:///C:/dbeaver-p2-repo"
