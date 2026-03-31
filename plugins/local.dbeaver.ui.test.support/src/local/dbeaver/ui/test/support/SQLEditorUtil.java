@@ -2,6 +2,7 @@ package local.dbeaver.ui.test.support;
 
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
+import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.waits.DefaultCondition;
@@ -11,114 +12,151 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swt.SWT;
-import org.eclipse.swtbot.swt.finder.keyboard.Keystrokes;
 
 public class SQLEditorUtil {
 
+    public static final String PARAM_DIALOG_TITLE = "Bind parameter(s)";
+
     /**
-     * Opens a SQL editor for a connection by right-clicking in the navigator.
+     * Opens a SQL console for a connection via the navigator context menu.
+     * Handles the driver download dialog if needed.
      */
-    public static SWTBotEditor openSQLEditor(SWTWorkbenchBot bot, String connectionName) {
+    public static SWTBotEditor openSQLConsole(SWTWorkbenchBot bot, String connectionName) {
         SWTBotTree tree = NavigatorUtil.getDatabaseNavigatorTree(bot);
         SWTBotTreeItem connNode = NavigatorUtil.findConnectionNode(tree, connectionName);
         connNode.select();
-        connNode.contextMenu("SQL Editor").click();
+        connNode.contextMenu("SQL Editor").menu("Open SQL console").click();
+        sleep(300);
 
-        // Wait for editor to open
-        try { Thread.sleep(2000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        // Handle driver download dialog if it appears (first time after fresh workspace)
+        ConnectionUtil.handleDriverDownload(bot);
 
+        // Wait for the editor to open
+        final SWTWorkbenchBot wbot = bot;
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() throws Exception {
+                try {
+                    return wbot.activeEditor() != null;
+                } catch (WidgetNotFoundException e) {
+                    return false;
+                }
+            }
+            @Override
+            public String getFailureMessage() {
+                return "SQL editor did not open in time";
+            }
+        }, 15000, 300);
+        sleep(300);
         return bot.activeEditor();
     }
 
     /**
-     * Types SQL into the active SQL editor.
+     * Types SQL into the active SQL editor, replacing any existing content.
      */
     public static void typeSQL(SWTWorkbenchBot bot, String sql) {
-        SWTBotStyledText styledText = bot.styledText();
-        styledText.setText(sql);
+        bot.styledText().setText(sql);
     }
 
-    /**
-     * Executes the SQL script in the active editor using Ctrl+Enter (execute statement)
-     * or Alt+X (execute script).
-     */
+    /** Executes the current SQL statement using Ctrl+Enter. */
     public static void executeStatement(SWTWorkbenchBot bot) {
         bot.styledText().setFocus();
-        // Ctrl+Enter executes the current statement
         bot.styledText().pressShortcut(SWT.CTRL, SWT.CR);
     }
 
-    /**
-     * Executes the entire SQL script using Alt+X.
-     */
+    /** Executes the entire SQL script using Alt+X. */
     public static void executeScript(SWTWorkbenchBot bot) {
         bot.styledText().setFocus();
         bot.styledText().pressShortcut(SWT.ALT, 'x');
     }
 
     /**
-     * Fills parameter values in the parameter binding dialog.
-     * @param bot the workbench bot
-     * @param values parameter values in order
+     * Fills the parameter binding dialog with the given values and clicks OK.
      */
     public static void fillParameterDialog(SWTWorkbenchBot bot, String... values) {
-        SWTBotShell paramShell = bot.shell("Bind parameter(s)");
+        bot.waitUntil(Conditions.shellIsActive(PARAM_DIALOG_TITLE), 10000);
+        SWTBotShell paramShell = bot.shell(PARAM_DIALOG_TITLE);
         paramShell.activate();
         SWTBot dialogBot = paramShell.bot();
 
         SWTBotTable paramTable = dialogBot.table();
         for (int i = 0; i < values.length; i++) {
-            paramTable.click(i, 1); // Click the Value column
-            try { Thread.sleep(200); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            paramTable.click(i, 2); // column 2 = Value
+            sleep(100);
             dialogBot.text().setText(values[i]);
+            sleep(50);
         }
 
         dialogBot.button("OK").click();
     }
 
-    /**
-     * Checks whether the result panel contains the expected text.
-     * Looks in the Data tab of the result panel.
-     */
-    public static boolean resultContains(SWTWorkbenchBot bot, String expected) {
-        try { Thread.sleep(3000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+    /** Checks if the parameter binding dialog is currently open. */
+    public static boolean isParameterDialogOpen(SWTWorkbenchBot bot) {
         try {
-            // Look for the result in the status line or result grid
-            SWTBotStyledText outputText = bot.styledText(1);
-            return outputText.getText().contains(expected);
-        } catch (Exception e) {
+            bot.shell(PARAM_DIALOG_TITLE);
+            return true;
+        } catch (WidgetNotFoundException e) {
             return false;
         }
     }
 
     /**
-     * Waits for SQL execution to complete by checking for the result panel.
+     * Waits for SQL execution to complete.
+     * Checks that no SQL-related jobs are running (rather than all jobs).
      */
     public static void waitForExecution(SWTWorkbenchBot bot) {
+        sleep(1000); // initial delay for the execution to start
         bot.waitUntil(new DefaultCondition() {
             @Override
             public boolean test() throws Exception {
-                // Execution is done when background jobs finish
-                return org.eclipse.core.runtime.jobs.Job.getJobManager()
-                        .find(null).length == 0;
+                var jobs = org.eclipse.core.runtime.jobs.Job.getJobManager().find(null);
+                for (var job : jobs) {
+                    String name = job.getName().toLowerCase();
+                    if (name.contains("sql") || name.contains("script") || name.contains("query")
+                            || name.contains("execute") || name.contains("data read")) {
+                        if (job.getState() == org.eclipse.core.runtime.jobs.Job.RUNNING) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
             }
 
             @Override
             public String getFailureMessage() {
                 return "SQL execution did not complete in time";
             }
-        }, 30000, 500);
+        }, 30000, 300);
+        sleep(500); // allow results to render
     }
 
     /**
-     * Checks if an error dialog appeared during execution.
+     * Checks if an error dialog appeared. Returns the error message or null.
      */
-    public static boolean hasErrorDialog(SWTWorkbenchBot bot) {
-        try {
-            bot.shell("Error").close();
-            return true;
-        } catch (WidgetNotFoundException e) {
-            return false;
+    public static String checkForErrorDialog(SWTWorkbenchBot bot) {
+        for (SWTBotShell shell : bot.shells()) {
+            String title = shell.getText().toLowerCase();
+            if (title.contains("error") || title.contains("warning")) {
+                String text = title;
+                try { text = shell.bot().label(0).getText(); } catch (Exception e) { }
+                shell.close();
+                return text;
+            }
         }
+        return null;
+    }
+
+    /** Dismisses any error dialog that might have appeared. */
+    public static void dismissErrorDialogs(SWTWorkbenchBot bot) {
+        for (SWTBotShell shell : bot.shells()) {
+            String title = shell.getText().toLowerCase();
+            if (title.contains("error") || title.contains("warning")) {
+                shell.close();
+            }
+        }
+    }
+
+    private static void sleep(long ms) {
+        try { Thread.sleep(ms); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
     }
 }

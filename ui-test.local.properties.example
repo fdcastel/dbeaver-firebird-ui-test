@@ -1,0 +1,23 @@
+# Machine-local configuration for DBeaver UI tests.
+# Copy to ui-test.local.properties and edit paths for your machine.
+
+# DBeaver repository root
+DBEAVER_REPO=C:\temp\dbeaver
+
+# Local DBeaver P2 repository (from product build)
+DBEAVER_P2_REPO=C:\temp\dbeaver\product\repositories\org.jkiss.dbeaver.ce.repository\target\repository
+
+# Java and Maven
+JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-21.0.8.6-hotspot
+MAVEN_EXE=mvn
+
+# Firebird connection
+FIREBIRD_HOST=localhost
+FIREBIRD_PORT=3050
+FIREBIRD_DATABASE=C:\temp\dbeaver\tmp\ui-test\firebird\UI_TEST_FB5.FDB
+FIREBIRD_USER=SYSDBA
+FIREBIRD_PASSWORD=masterkey
+FIREBIRD_ISQL=C:\Program Files\Firebird\Firebird_5_0\isql.exe
+
+# Test artifacts output
+ARTIFACTS_DIR=C:\temp\dbeaver\tmp\ui-test\artifacts

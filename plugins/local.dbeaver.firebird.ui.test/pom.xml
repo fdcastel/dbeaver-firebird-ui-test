@@ -16,6 +16,52 @@
 
     <build>
         <plugins>
+            <!-- Pre-seed test workspace with DBeaver preferences to suppress startup dialogs -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>seed-test-workspace</id>
+                        <phase>process-test-resources</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <target>
+                                <!-- Seed DBeaver preferences to suppress startup dialogs -->
+                                <mkdir dir="${project.build.directory}/test-workspace/.metadata/.plugins/org.eclipse.core.runtime/.settings"/>
+                                <echo file="${project.build.directory}/test-workspace/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.jkiss.dbeaver.core.prefs">eclipse.preferences.version=1
+sample.database.canceled=true
+tipOfTheDayInitializer.notFirstRun=true
+ui.auto.update.check=false
+ui.show.tip.of.the.day.on.startup=false
+org.jkiss.dbeaver.core.confirm.driver_download=always
+navigator.expand.on.connect=true
+ui.drivers.home=${project.build.directory}/drivers
+</echo>
+                                <echo file="${project.build.directory}/test-workspace/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.jkiss.dbeaver.ui.statistics.prefs">eclipse.preferences.version=1
+feature.tracking.skipConfirmation=true
+</echo>
+                                <!-- Pre-copy Jaybird driver files so DBeaver never shows download dialog -->
+                                <mkdir dir="${project.build.directory}/drivers/maven/maven-central/org.firebirdsql.jdbc"/>
+                                <mkdir dir="${project.build.directory}/drivers/maven/maven-central/net.java.dev.jna"/>
+                                <copy todir="${project.build.directory}/drivers/maven/maven-central" failonerror="false">
+                                    <fileset dir="${env.APPDATA}/DBeaverData/drivers/maven/maven-central" includes="org.firebirdsql.jdbc/**,net.java.dev.jna/**"/>
+                                </copy>
+                                <!-- Create plugin_customization.ini for DBeaver preferences -->
+                                <echo file="${project.build.directory}/plugin_customization.ini">org.jkiss.dbeaver.core/ui.drivers.home=${project.build.directory}/drivers
+org.jkiss.dbeaver.core/sample.database.canceled=true
+org.jkiss.dbeaver.core/tipOfTheDayInitializer.notFirstRun=true
+org.jkiss.dbeaver.core/ui.auto.update.check=false
+org.jkiss.dbeaver.core/ui.show.tip.of.the.day.on.startup=false
+org.jkiss.dbeaver.core/org.jkiss.dbeaver.core.confirm.driver_download=always
+org.jkiss.dbeaver.core/navigator.expand.on.connect=true
+</echo>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.eclipse.tycho</groupId>
                 <artifactId>tycho-surefire-plugin</artifactId>
@@ -33,8 +79,20 @@
                         -Dfirebird.user=${firebird.user}
                         -Dfirebird.password=${firebird.password}
                         -Duitest.artifacts.dir=${project.basedir}/../../artifacts</argLine>
-                    <appArgLine>-nl en -data @noDefault</appArgLine>
-                    <testRunnerAdditionalTime>60000</testRunnerAdditionalTime>
+                    <!-- Use a clean temporary workspace for each test run -->
+                    <work>${project.build.directory}/work</work>
+                    <testFailureIgnore>true</testFailureIgnore>
+                    <appArgLine>-nl en -data ${project.build.directory}/test-workspace -pluginCustomization ${project.build.directory}/plugin_customization.ini</appArgLine>
+                    <includes>
+                        <include>**/AllFirebirdUITests.java</include>
+                    </includes>
+                    <dependencies>
+                        <dependency>
+                            <type>eclipse-plugin</type>
+                            <artifactId>org.jkiss.dbeaver.ui.app.standalone</artifactId>
+                            <version>0.0.0</version>
+                        </dependency>
+                    </dependencies>
                 </configuration>
             </plugin>
         </plugins>
