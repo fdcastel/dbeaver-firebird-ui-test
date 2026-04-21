@@ -186,6 +186,65 @@ public class SQLEditorUtil {
         }
     }
 
+    /**
+     * Scans the entire active workbench (not just modal shells) for SQL error
+     * text that DBeaver renders inline in the Results panel — things like
+     * "SQL Error [337248300] [07008]: Invalid number of parameters"
+     * or "Token unknown - line 1, column ...".
+     *
+     * Returns the first matching excerpt, or null if none found. Much stronger
+     * than {@link #checkForErrorDialog} because DBeaver only uses modal error
+     * dialogs for connection-level failures; query-level errors go inline.
+     */
+    public static String checkForInlineSqlError(SWTWorkbenchBot bot) {
+        final StringBuilder[] hit = { null };
+        org.eclipse.swt.widgets.Display.getDefault().syncExec(() -> {
+            for (SWTBotShell shell : bot.shells()) {
+                if (!shell.isOpen() || !shell.isVisible()) continue;
+                StringBuilder sb = new StringBuilder();
+                try {
+                    collectText((org.eclipse.swt.widgets.Widget) shell.widget, sb);
+                } catch (Exception ignore) { }
+                String text = sb.toString();
+                int idx = -1;
+                String[] markers = { "SQL Error", "Token unknown", "Invalid number of parameters" };
+                for (String marker : markers) {
+                    int i = text.indexOf(marker);
+                    if (i >= 0 && (idx < 0 || i < idx)) idx = i;
+                }
+                if (idx >= 0) {
+                    int end = Math.min(text.length(), idx + 300);
+                    hit[0] = new StringBuilder(text.substring(idx, end));
+                    return;
+                }
+            }
+        });
+        return hit[0] == null ? null : hit[0].toString();
+    }
+
+    /**
+     * Returns true if any visible shell's widget tree contains the given
+     * substring. Used to assert that a specific query result value is
+     * displayed in the Results panel.
+     */
+    public static boolean workbenchContainsText(SWTWorkbenchBot bot, String needle) {
+        final boolean[] found = { false };
+        org.eclipse.swt.widgets.Display.getDefault().syncExec(() -> {
+            for (SWTBotShell shell : bot.shells()) {
+                if (!shell.isOpen() || !shell.isVisible()) continue;
+                StringBuilder sb = new StringBuilder();
+                try {
+                    collectText((org.eclipse.swt.widgets.Widget) shell.widget, sb);
+                } catch (Exception ignore) { }
+                if (sb.indexOf(needle) >= 0) {
+                    found[0] = true;
+                    return;
+                }
+            }
+        });
+        return found[0];
+    }
+
     /** Dismisses any error dialog that might have appeared. */
     public static void dismissErrorDialogs(SWTWorkbenchBot bot) {
         for (SWTBotShell shell : bot.shells()) {

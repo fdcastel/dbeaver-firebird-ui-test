@@ -71,12 +71,14 @@ public class ExecuteBlockParameterBindingTest {
 
             SQLEditorUtil.waitForExecution(bot);
 
-            // On 'devel' branch this FAILS because Firebird's DSQL parser rejects text-substituted query.
-            // On 'fix/firebird-execute-block-params' branch, native binding succeeds.
-            String error = SQLEditorUtil.checkForErrorDialog(bot);
-            assertNull("EXECUTE BLOCK should execute without errors " +
-                    "(fails on 'devel', passes on 'fix/firebird-execute-block-params'). " +
-                    "Error: " + error, error);
+            // Stronger check: scan the workbench for inline SQL error text rendered
+            // in the Results panel (DBeaver does not use modal dialogs for query errors).
+            String inlineError = SQLEditorUtil.checkForInlineSqlError(bot);
+            assertNull("EXECUTE BLOCK with positional ? should execute without errors. " +
+                    "Inline error: " + inlineError, inlineError);
+            String modalError = SQLEditorUtil.checkForErrorDialog(bot);
+            assertNull("EXECUTE BLOCK with positional ? should not raise modal errors. " +
+                    "Error: " + modalError, modalError);
 
             editor.close();
         } catch (Exception e) {

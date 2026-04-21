@@ -75,9 +75,14 @@ public class ExecuteProcedureParameterBindingTest {
 
             SQLEditorUtil.waitForExecution(bot);
 
-            String error = SQLEditorUtil.checkForErrorDialog(bot);
-            assertNull("EXECUTE PROCEDURE with ? should execute without errors " +
-                    "(fails if EXECUTE is in DDL_KEYWORDS). Error: " + error, error);
+            // Stronger check: DBeaver renders SQL errors inline in the Results panel,
+            // so checkForErrorDialog alone misses silent failures.
+            String inlineError = SQLEditorUtil.checkForInlineSqlError(bot);
+            assertNull("EXECUTE PROCEDURE with ? should execute without errors. " +
+                    "Inline error: " + inlineError, inlineError);
+            String modalError = SQLEditorUtil.checkForErrorDialog(bot);
+            assertNull("EXECUTE PROCEDURE with ? should not raise modal errors. " +
+                    "Error: " + modalError, modalError);
 
             editor.close();
         } catch (Exception e) {

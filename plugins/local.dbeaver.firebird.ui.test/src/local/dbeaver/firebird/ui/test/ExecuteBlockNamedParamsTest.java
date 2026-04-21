@@ -71,13 +71,16 @@ public class ExecuteBlockNamedParamsTest {
 
             SQLEditorUtil.waitForExecution(bot);
 
-            // On 'devel' branch this FAILS because named params are not replaced
-            // with positional ? placeholders before JDBC execution.
-            // On 'fix/firebird-execute-block-params' branch, named binding succeeds.
-            String error = SQLEditorUtil.checkForErrorDialog(bot);
-            assertNull("EXECUTE BLOCK with named params should execute without errors " +
-                    "(fails on 'devel', passes on 'fix/firebird-execute-block-params'). " +
-                    "Error: " + error, error);
+            // Stronger check: DBeaver renders query errors inline in the Results
+            // panel (not as a modal dialog), so checkForErrorDialog alone misses
+            // them. checkForInlineSqlError scans the whole workbench for "SQL Error",
+            // "Token unknown", or "Invalid number of parameters".
+            String inlineError = SQLEditorUtil.checkForInlineSqlError(bot);
+            assertNull("EXECUTE BLOCK with named params should execute without errors. " +
+                    "Inline error: " + inlineError, inlineError);
+            String modalError = SQLEditorUtil.checkForErrorDialog(bot);
+            assertNull("EXECUTE BLOCK with named params should not raise modal errors. " +
+                    "Error: " + modalError, modalError);
 
             editor.close();
         } catch (Exception e) {
